@@ -14,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -38,6 +40,16 @@ public class ChatSessionServiceImpl extends ServiceImpl<ChatSessionMapper, ChatS
         super.save(chatSession);
 
         return sessionVO;
+    }
+
+    /**
+     * 获取热门会话
+     *
+     * @return 热门会话列表
+     */
+    @Override
+    public List<SessionVO.Example> hotExamples(Integer num) {
+        return RandomUtil.randomEleList(sessionProperties.getExamples(), num);
     }
 
 }
