@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
@@ -19,17 +20,21 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ChatServiceImpl implements ChatService {
 
+
+
     private final ChatClient chatClient;
 
     private final SystemPromptConfig systemPromptConfig;
 
     @Override
     public Flux<ChatEventVO> chat(String question, String sessionId) {
+        var conversationId = ChatService.getConversationId(sessionId);
         return chatClient.prompt()
                 .system(promptSystem -> promptSystem
                         .text(this.systemPromptConfig.getChatSystemMessage().get())
                         .params(Map.of("now", DateUtil.now()))
                 )
+                .advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID,conversationId))
                 .user(question)
                 .stream()
                 .chatResponse()
