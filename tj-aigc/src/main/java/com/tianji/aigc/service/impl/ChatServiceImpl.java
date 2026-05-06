@@ -43,7 +43,6 @@ public class ChatServiceImpl implements ChatService {
     private static final ChatEventVO STOP_EVENT = ChatEventVO.builder().eventType(ChatEventTypeEnum.STOP.getValue()).build();
 
 
-
     @Override
     public Flux<ChatEventVO> chat(String question, String sessionId) {
         var conversationId = ChatService.getConversationId(sessionId);
@@ -67,7 +66,7 @@ public class ChatServiceImpl implements ChatService {
                 .advisors(advisor -> advisor
                         .advisors(qaAdvisor)
                         .param(ChatMemory.CONVERSATION_ID, conversationId))
-                .toolContext(Map.of(Constant.REQUEST_ID, requestId,Constant.USER_ID,userId)) //通过工具上下文传递参数
+                .toolContext(Map.of(Constant.REQUEST_ID, requestId, Constant.USER_ID, userId)) //通过工具上下文传递参数
                 .user(question)
                 .stream()
                 .chatResponse()
@@ -91,7 +90,7 @@ public class ChatServiceImpl implements ChatService {
                     // 追加到输出内容中
                     outputBuilder.append(text);
                     return ChatEventVO.builder()
-                             .eventData(text)
+                            .eventData(text)
                             .eventType(ChatEventTypeEnum.DATA.getValue())
                             .build();
                 })
