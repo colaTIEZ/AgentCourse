@@ -15,8 +15,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -32,6 +35,7 @@ public class ChatServiceImpl implements ChatService {
     private final SystemPromptConfig systemPromptConfig;
     private final ChatMemory chatMemory;
     private final StringRedisTemplate stringRedisTemplate;
+    private final VectorStore vectorStore;
 
     // 生成状态标识
     private static final String GENERATE_STATUS_KEY = "GENERATE_STATUS";
@@ -50,12 +54,19 @@ public class ChatServiceImpl implements ChatService {
         var hashOps = stringRedisTemplate.boundHashOps(GENERATE_STATUS_KEY);
         // 获取用户id
         var userId = UserContext.getUser();
+        // 创建RAG增强
+        var qaAdvisor = QuestionAnswerAdvisor.builder(this.vectorStore)
+                .searchRequest(SearchRequest.builder().similarityThreshold(0.6d).topK(6).build())
+                .build();
+
         return chatClient.prompt()
                 .system(promptSystem -> promptSystem
                         .text(this.systemPromptConfig.getChatSystemMessage().get())
                         .params(Map.of("now", DateUtil.now()))
                 )
-                .advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, conversationId))
+                .advisors(advisor -> advisor
+                        .advisors(qaAdvisor)
+                        .param(ChatMemory.CONVERSATION_ID, conversationId))
                 .toolContext(Map.of(Constant.REQUEST_ID, requestId,Constant.USER_ID,userId)) //通过工具上下文传递参数
                 .user(question)
                 .stream()
