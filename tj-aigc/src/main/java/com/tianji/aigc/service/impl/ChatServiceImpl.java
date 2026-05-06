@@ -3,6 +3,7 @@ package com.tianji.aigc.service.impl;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.IdUtil;
+import cn.hutool.core.util.StrUtil;
 import com.tianji.aigc.config.SystemPromptConfig;
 import com.tianji.aigc.config.ToolResultHolder;
 import com.tianji.aigc.constants.Constant;
@@ -62,13 +63,19 @@ public class ChatServiceImpl implements ChatService {
                 .doFirst(() -> hashOps.put(sessionId, "true")) // 第一次输出内容时执行
                 .doOnError(throwable -> hashOps.delete(sessionId))// 出现异常时，删除标识
                 .doOnComplete(() -> hashOps.delete(sessionId))// 完成时执行，删除标识
-                .doOnCancel(() -> {
-                    saveStopHistoryRecord(conversationId, outputBuilder.toString());
-                })
+                .doOnCancel(() -> saveStopHistoryRecord(conversationId, outputBuilder.toString()))
                 .takeWhile(response ->  // 通过返回值来控制Flux流是否继续，true：继续，false：终止
                         hashOps.get(sessionId) != null
                 )
                 .map(chatResponse -> {
+                    // 对于响应结果进行处理，如果是最后一条数据，就把此次消息id放到内存中
+                    // 主要用于存储消息数据到 redis中，可以根据消息id获取的请求id，再通过请求id就可以获取到参数列表了
+                    // 从而解决，在历史聊天记录中没有外参数的问题
+                    var finishReason = chatResponse.getResult().getMetadata().getFinishReason();
+                    if (StrUtil.equals(Constant.STOP, finishReason)) {
+                        var messageId = chatResponse.getMetadata().getId();
+                        ToolResultHolder.put(messageId, Constant.REQUEST_ID, requestId);
+                    }
                     String text = chatResponse.getResult().getOutput().getText();
                     // 追加到输出内容中
                     outputBuilder.append(text);
