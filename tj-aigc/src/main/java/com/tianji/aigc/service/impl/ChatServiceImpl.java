@@ -9,6 +9,7 @@ import com.tianji.aigc.constants.Constant;
 import com.tianji.aigc.enums.ChatEventTypeEnum;
 import com.tianji.aigc.service.ChatService;
 import com.tianji.aigc.vo.ChatEventVO;
+import com.tianji.common.utils.UserContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -20,7 +21,6 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @Slf4j
@@ -47,13 +47,15 @@ public class ChatServiceImpl implements ChatService {
         // 生成请求id
         var requestId = IdUtil.fastSimpleUUID();
         var hashOps = stringRedisTemplate.boundHashOps(GENERATE_STATUS_KEY);
+        // 获取用户id
+        var userId = UserContext.getUser();
         return chatClient.prompt()
                 .system(promptSystem -> promptSystem
                         .text(this.systemPromptConfig.getChatSystemMessage().get())
                         .params(Map.of("now", DateUtil.now()))
                 )
                 .advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, conversationId))
-                .toolContext(Map.of(Constant.REQUEST_ID, requestId)) //通过工具上下文传递参数
+                .toolContext(Map.of(Constant.REQUEST_ID, requestId,Constant.USER_ID,userId)) //通过工具上下文传递参数
                 .user(question)
                 .stream()
                 .chatResponse()
@@ -71,7 +73,7 @@ public class ChatServiceImpl implements ChatService {
                     // 追加到输出内容中
                     outputBuilder.append(text);
                     return ChatEventVO.builder()
-                            .eventData(text)
+                             .eventData(text)
                             .eventType(ChatEventTypeEnum.DATA.getValue())
                             .build();
                 })
