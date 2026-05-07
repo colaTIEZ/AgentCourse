@@ -8,6 +8,7 @@ import cn.hutool.core.stream.StreamUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.aigc.config.SessionProperties;
 import com.tianji.aigc.entity.ChatSession;
@@ -172,5 +173,20 @@ public class ChatSessionServiceImpl extends ServiceImpl<ChatSessionMapper, ChatS
             }
         });
 
+    }
+
+    @Override
+    public void deleteHistorySession(String sessionId) {
+
+        boolean removed = remove(new LambdaQueryWrapper<ChatSession>()
+                .eq(ChatSession::getSessionId, sessionId)
+                .eq(ChatSession::getUserId, UserContext.getUser())
+        );
+        if (!removed) {
+            log.warn("用户{}删除会话{}失败", UserContext.getUser(), sessionId);
+        }
+        // 删除Redis中对应的聊天记录
+        String conversationId = ChatService.getConversationId(sessionId);
+        this.chatMemory.clear(conversationId);
     }
 }

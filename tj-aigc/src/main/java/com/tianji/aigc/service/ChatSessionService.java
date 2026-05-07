@@ -47,4 +47,12 @@ public interface ChatSessionService extends IService<ChatSession> {
      * 查询历史会话列表
      */
     Map<String, List<ChatSessionVO>> queryHistorySession();
+
+
+    /**
+     * 删除历史会话
+     *
+     * @param sessionId 会话id
+     */
+    void deleteHistorySession(String sessionId);
 }

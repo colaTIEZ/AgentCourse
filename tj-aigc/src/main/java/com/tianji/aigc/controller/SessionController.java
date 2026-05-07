@@ -53,4 +53,12 @@ public class SessionController {
         return this.chatSessionService.queryHistorySession();
     }
 
+    /**
+     * 删除历史会话列表
+     */
+    @DeleteMapping("/history")
+    public void deleteHistorySession(@RequestParam("sessionId") String sessionId) {
+        this.chatSessionService.deleteHistorySession(sessionId);
+    }
+
 }
