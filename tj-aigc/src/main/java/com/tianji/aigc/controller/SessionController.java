@@ -61,4 +61,13 @@ public class SessionController {
         this.chatSessionService.deleteHistorySession(sessionId);
     }
 
+    /**
+     * 更新历史会话标题
+     */
+    @PutMapping("/history")
+    public void updateTitle(@RequestParam("sessionId") String sessionId,
+                            @RequestParam("title") String title) {
+        this.chatSessionService.updateTitle(sessionId, title);
+    }
+
 }

@@ -55,4 +55,6 @@ public interface ChatSessionService extends IService<ChatSession> {
      * @param sessionId 会话id
      */
     void deleteHistorySession(String sessionId);
+
+    void updateTitle(String sessionId, String title);
 }

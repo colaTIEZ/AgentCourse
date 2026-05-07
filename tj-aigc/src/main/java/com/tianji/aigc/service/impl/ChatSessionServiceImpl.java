@@ -189,4 +189,25 @@ public class ChatSessionServiceImpl extends ServiceImpl<ChatSessionMapper, ChatS
         String conversationId = ChatService.getConversationId(sessionId);
         this.chatMemory.clear(conversationId);
     }
+
+    @Override
+    public void updateTitle(String sessionId, String title) {
+        // 参数校验
+        if (StrUtil.isBlank(sessionId)) {
+            throw new IllegalArgumentException("会话ID不能为空");
+        }
+        if (StrUtil.isBlank(title)) {
+            throw new IllegalArgumentException("会话标题不能为空");
+        }
+        // 更新会话标题
+        boolean updated = lambdaUpdate()
+                .set(ChatSession::getTitle, StrUtil.sub(title, 0, 100))
+                .eq(ChatSession::getSessionId, sessionId)
+                .eq(ChatSession::getUserId, UserContext.getUser())
+                .update();
+        if (!updated) {
+            log.warn("用户{}更新会话{}标题失败", UserContext.getUser(), sessionId);
+            throw new RuntimeException("更新会话标题失败");
+        }
+    }
 }
