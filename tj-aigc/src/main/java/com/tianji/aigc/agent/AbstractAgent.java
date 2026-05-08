@@ -8,8 +8,11 @@ import com.tianji.aigc.config.ToolResultHolder;
 import com.tianji.aigc.constants.Constant;
 import com.tianji.aigc.enums.ChatEventTypeEnum;
 import com.tianji.aigc.service.ChatService;
+import com.tianji.aigc.service.ChatSessionService;
 import com.tianji.aigc.vo.ChatEventVO;
+import com.tianji.common.utils.UserContext;
 import jakarta.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -20,6 +23,7 @@ import reactor.core.publisher.Flux;
 import java.util.Map;
 
 @Slf4j
+@RequiredArgsConstructor
 public abstract class AbstractAgent implements Agent {
 
     @Resource
@@ -28,10 +32,12 @@ public abstract class AbstractAgent implements Agent {
     private ChatMemory chatMemory;
     @Resource
     private ChatClient chatClient;
+    @Resource
+    private ChatSessionService chatSessionService;
     // 生成状态标识
     private static final String GENERATE_STATUS_KEY = "GENERATE_STATUS";
     // 输出结束的标记
-    private static final ChatEventVO STOP_EVENT = ChatEventVO.builder().eventType(ChatEventTypeEnum.STOP.getValue()).build();
+    public static final ChatEventVO STOP_EVENT = ChatEventVO.builder().eventType(ChatEventTypeEnum.STOP.getValue()).build();
 
     @Override
     public void stop(String sessionId) {
@@ -44,6 +50,8 @@ public abstract class AbstractAgent implements Agent {
     @Override
     public String process(String question, String sessionId) {
         String requestId = generateRequestId();
+        Long userId = UserContext.getUser();
+        chatSessionService.update(sessionId, question, userId);
         return getChatClientRequest(question, sessionId, requestId)
                 .call()
                 .content();
@@ -65,6 +73,8 @@ public abstract class AbstractAgent implements Agent {
         var conversationId = ChatService.getConversationId(sessionId);
         // 大模型输出内容的缓存器，用于在输出中断后的数据存储
         var outputBuilder = new StringBuilder();
+        Long userId = UserContext.getUser();
+        chatSessionService.update(sessionId, question, userId);
         return getChatClientRequest(question, sessionId, requestId)
                 .stream()
                 .chatResponse()

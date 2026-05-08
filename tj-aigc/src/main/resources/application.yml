@@ -40,3 +40,4 @@ tj:
           data-id: buy-agent-system-message.txt
     memory:
       max: 100 #存储最大的聊天记录数
+    chat-type: ROUTE
