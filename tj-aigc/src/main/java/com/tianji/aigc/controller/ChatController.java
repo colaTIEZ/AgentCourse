@@ -4,6 +4,7 @@ package com.tianji.aigc.controller;
 import com.tianji.aigc.dto.ChatDTO;
 import com.tianji.aigc.service.ChatService;
 import com.tianji.aigc.vo.ChatEventVO;
+import com.tianji.aigc.vo.TemplateVO;
 import com.tianji.common.annotations.NoWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +17,8 @@ import reactor.core.publisher.Flux;
 @RequestMapping("/chat")
 @RequiredArgsConstructor
 public class ChatController {
+
+    private static final TemplateVO TEMPLATE_VO = new TemplateVO();
 
     private final ChatService chatService;
 
@@ -32,5 +35,10 @@ public class ChatController {
     @PostMapping("/text")
     public String chatText(@RequestBody String question) {
         return this.chatService.chatText(question);
+    }
+
+    @GetMapping("/templates")
+    public TemplateVO getTemplates() {
+        return TEMPLATE_VO;
     }
 }
