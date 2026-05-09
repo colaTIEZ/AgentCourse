@@ -31,10 +31,11 @@ import java.util.Map;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-@ConditionalOnProperty(prefix = "tj.ai",name = "chat-type",havingValue = "ENHANCE")
+@ConditionalOnProperty(prefix = "tj.ai", name = "chat-type", havingValue = "ENHANCE")
 public class ChatServiceImpl implements ChatService {
 
     private final ChatClient chatClient;
+    private final ChatClient openAiChatClient;
     private final SystemPromptConfig systemPromptConfig;
     private final ChatMemory chatMemory;
     private final StringRedisTemplate stringRedisTemplate;
@@ -45,8 +46,6 @@ public class ChatServiceImpl implements ChatService {
     private static final String GENERATE_STATUS_KEY = "GENERATE_STATUS";
     // 输出结束的标记
     private static final ChatEventVO STOP_EVENT = ChatEventVO.builder().eventType(ChatEventTypeEnum.STOP.getValue()).build();
-
-
 
     @Override
     public Flux<ChatEventVO> chat(String question, String sessionId) {
@@ -59,7 +58,7 @@ public class ChatServiceImpl implements ChatService {
         // 获取用户id
         var userId = UserContext.getUser();
         //异步更新会话信息
-        chatSessionService.update(sessionId,question,userId);
+        chatSessionService.update(sessionId, question, userId);
 
         // 创建RAG增强
         var qaAdvisor = QuestionAnswerAdvisor.builder(this.vectorStore)
@@ -134,5 +133,14 @@ public class ChatServiceImpl implements ChatService {
         //移除标记
         var hashOps = stringRedisTemplate.boundHashOps(GENERATE_STATUS_KEY);
         hashOps.delete(sessionId);
+    }
+
+    @Override
+    public String chatText(String question) {
+        return this.openAiChatClient.prompt()
+                .system(promptSystem -> promptSystem.text(this.systemPromptConfig.getTextSystemMessage().get()))
+                .user(question)
+                .call()
+                .content();
     }
 }

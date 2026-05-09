@@ -10,6 +10,8 @@ import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,15 +27,15 @@ public class SpringAIConfig {
      * 配置 ChatClient
      */
     @Bean
-    public ChatClient chatClient(ChatClient.Builder chatClientBuilder,
+    public ChatClient chatClient(@Qualifier("dashscopeChatModel") ChatModel dashScopeChatModel,
                                  Advisor loggerAdvisor,
                                  Advisor messageChatMemoryAdvisor,
                                  Advisor recordOptimizationAdvisor
 //                                 CourseTools courseTools,
 //                                 OrderTools orderTools // 预下单工具
     ) {  // 日志记录器
-        return chatClientBuilder
-                .defaultAdvisors(loggerAdvisor, messageChatMemoryAdvisor,recordOptimizationAdvisor) //添加 Advisor 功能增强
+        return ChatClient.builder(dashScopeChatModel)
+                .defaultAdvisors(loggerAdvisor, messageChatMemoryAdvisor, recordOptimizationAdvisor) //添加 Advisor 功能增强
 //                .defaultTools(courseTools,orderTools)
                 .build();
 
@@ -74,4 +76,14 @@ public class SpringAIConfig {
     public Advisor recordOptimizationAdvisor(MyChatMemoryRepository myChatMemoryRepository) {
         return new RecordOptimizationAdvisor(myChatMemoryRepository);
     }
+
+    @Bean
+    public ChatClient openAiChatClient(@Qualifier("openAiChatModel") ChatModel openAiChatModel,
+                                       Advisor loggerAdvisor  // 日志记录器
+    ) {
+        return ChatClient.builder(openAiChatModel)
+                .defaultAdvisors(loggerAdvisor)
+                .build();
+    }
+
 }
